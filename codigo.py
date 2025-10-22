@@ -167,33 +167,12 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
 
     subperiodos = []
     for dia in rango_fechas:
+        # CAMBIO: Eliminado el filtro redundante por empresa
+        fila = fechas[(fechas['desde'] <= dia) & (fechas['hasta'] >= dia)]
         
-        fechas_empresa = fechas[fechas['empresa'] == empresa]
-        
-        fila = fechas_empresa[(fechas_empresa['desde'] <= dia) & (fechas_empresa['hasta'] >= dia)]
-        
+        # CAMBIO: Simplificada la selección de CT - solo por fecha
         if not fila.empty:
-            # 1. Buscar n{nivel_ingresos}
-            fila_nivel = fila[fila[ct_col].str.contains(f"n{nivel_ingresos}", case=False, na=False)]
-            # Si tsocial es 0, filtrar para que no contenga 'ts'
-            if tsocial == 0:
-                fila_nivel = fila_nivel[~fila_nivel[ct_col].str.contains('ts', case=False, na=False)]
-            # Si tsocial es 1, buscar preferentemente los que incluyen 'ts'
-            elif tsocial == 1:
-                fila_nivel_ts = fila_nivel[fila_nivel[ct_col].str.contains('ts', case=False, na=False)]
-                if not fila_nivel_ts.empty:
-                    fila_nivel = fila_nivel_ts
-            # 2. Si no hay n{nivel_ingresos}, buscar tsg{nivel_ingresos}
-            if fila_nivel.empty:
-                fila_nivel = fila[fila[ct_col].str.contains(f"tsg{nivel_ingresos}", case=False, na=False)]
-            # 3. Si tampoco hay, buscar cualquiera que tenga 'ts'
-            if fila_nivel.empty:
-                fila_nivel = fila[fila[ct_col].str.contains('ts', case=False, na=False)]
-            if not fila_nivel.empty:
-                subperiodos.append({'fecha': dia, 'ct': fila_nivel.iloc[0][ct_col]})
-            else:
-                # Si ninguno cumple la condición, elegimos el primero de los resultados originales
-                subperiodos.append({'fecha': dia, 'ct': fila.iloc[0][ct_col]})
+            subperiodos.append({'fecha': dia, 'ct': fila.iloc[0][ct_col]})
         else:
             subperiodos.append({'fecha': dia, 'ct': None})
 
@@ -230,11 +209,13 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         # Cálculo de costos fijos
         cft_total_1 = 0
         for ct in subperiodo_1['ct'].dropna().unique():
+            # CAMBIO: Agregado filtro por tarifa_social
             filtro = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
                 (ctarifarios['umbral_minimo'] <= cat_consumo) &
-                (ctarifarios['umbral_maximo'] >= cat_consumo)
+                (ctarifarios['umbral_maximo'] >= cat_consumo) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ]
             if not filtro.empty:
                 dias_ct = subperiodo_1[subperiodo_1['ct'] == ct].shape[0]
@@ -302,12 +283,13 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         # Cálculo de costos fijos
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
+            # CAMBIO: Eliminado filtro redundante por empresa
             filtro = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
-                (ctarifarios['empresa'] == empresa) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
                 (ctarifarios['umbral_minimo'] <= cat_consumo) &
-                (ctarifarios['umbral_maximo'] >= cat_consumo)
+                (ctarifarios['umbral_maximo'] >= cat_consumo) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ]
             if not filtro.empty:
                 dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
@@ -328,8 +310,11 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         precios_pesados = []
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
+            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             filtro_ct = ctarifarios[
-                (ctarifarios['archivo'] == ct) 
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ].sort_values('umbral_minimo')
             if not filtro_ct.empty:
                 for _, fila in filtro_ct.iterrows():
@@ -354,7 +339,14 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cuota = 1 if (fecha_1.day <= 15) else 2
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            f = ctarifarios[(ctarifarios['archivo'] == ct)]
+            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['umbral_minimo'] <= consumo_a_facturar) &
+                (ctarifarios['umbral_maximo'] >= consumo_a_facturar) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ]
             if f.empty: continue
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
             tramo = f['costo_fijo'].iloc[0] * (dias_ct / dias_entre_lecturas)
@@ -364,7 +356,12 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         precios_pesados = []
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            f = ctarifarios[(ctarifarios['archivo'] == ct)].sort_values('umbral_minimo')
+            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ].sort_values('umbral_minimo')
             if f.empty: continue
             for _, fila in f.iterrows():
                 if consumo_a_facturar <= fila['umbral_maximo'] or pd.isna(fila['umbral_maximo']):
@@ -381,7 +378,14 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         consumo_a_facturar = round(consumo)
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            f = ctarifarios[(ctarifarios['archivo'] == ct)]
+            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['umbral_minimo'] <= consumo_a_facturar) &
+                (ctarifarios['umbral_maximo'] >= consumo_a_facturar) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ]
             if f.empty: continue
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
             tramo = round(f['costo_fijo'].iloc[0] * (dias_ct / dias_entre_lecturas), 2)
@@ -391,7 +395,12 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cvt_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            f = ctarifarios[(ctarifarios['archivo'] == ct)].sort_values('umbral_minimo')
+            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ].sort_values('umbral_minimo')
             if f.empty: continue
             consumo_ct = consumo_a_facturar * (dias_ct / dias_entre_lecturas)
             acumulado = 0
@@ -427,4 +436,3 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         
 if __name__ == '__main__':
     app.run(debug=True)
-
