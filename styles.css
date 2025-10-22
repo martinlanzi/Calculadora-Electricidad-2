@@ -1,0 +1,536 @@
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Changed gradient from green to blue tones */
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #475569;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Page Container */
+.page-container {
+  min-height: 100vh;
+  padding: 1.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* Header Section */
+.header-section {
+  /* Made header blue slightly lighter */
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+  padding: 2rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.title-section {
+  flex: 1;
+}
+
+.main-title {
+  font-family: "Work Sans", sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.logo-section {
+  margin-left: 2rem;
+}
+
+.logo {
+  height: 180px; /* Significantly increased logo size from 100px to 180px */
+  width: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Container */
+.form-container {
+  padding: 2rem;
+}
+
+.calculation-form {
+  display: flex;
+  flex-direction: column;
+  /* Reduced gap for more compact layout */
+  gap: 1.5rem;
+}
+
+/* Form Sections */
+.form-section {
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  /* Reduced padding for more compact sections */
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.form-section:hover {
+  /* Changed hover border color from green to blue */
+  border-color: #3b82f6;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+}
+
+.section-title {
+  font-family: "Work Sans", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  /* Changed section title color from green to blue */
+  color: #2563eb;
+  /* Reduced margin for more compact layout */
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title::before {
+  content: "";
+  width: 4px;
+  height: 1.3rem;
+  /* Changed accent bar from green to blue gradient */
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-radius: 2px;
+}
+
+/* Input Groups */
+.input-group {
+  /* Reduced margin for more compact layout */
+  margin-bottom: 1rem;
+}
+
+.input-group:last-child {
+  margin-bottom: 0;
+}
+
+.input-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  /* Reduced padding for more compact inputs */
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  /* Changed focus border color from green to blue */
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input:hover,
+.form-select:hover {
+  /* Changed hover border color from green to blue */
+  border-color: #2563eb;
+}
+
+.input-help {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Specific Layout Groups */
+.date-inputs,
+.location-inputs,
+.socioeconomic-inputs {
+  display: grid;
+  /* Reduced gap for more compact layout */
+  gap: 1rem;
+}
+
+/* Made date and location inputs use 2 columns for more compact layout */
+.date-inputs {
+  grid-template-columns: 1fr 1fr;
+}
+
+.location-inputs {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Made socioeconomic inputs use 2 columns where possible */
+.socioeconomic-inputs {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+/* Made zona fria group span full width */
+.zona-fria-group {
+  grid-column: 1 / -1;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 3px solid #e2e8f0;
+}
+
+/* Action Buttons */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Reduced button padding for more compact design */
+  padding: 0.875rem 1.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.btn-primary {
+  /* Changed button gradient from green to blue */
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+  /* Changed button hover gradient from green to blue */
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(37, 99, 235, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #b91c1c, #dc2626);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(220, 38, 38, 0.4);
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: white;
+  box-shadow: 0 6px 12px -2px rgba(30, 64, 175, 0.4);
+  /* Made both buttons have identical dimensions */
+  padding: 1.25rem 2.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  line-height: 1.4;
+  min-height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-map {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white;
+  box-shadow: 0 6px 12px -2px rgba(5, 150, 105, 0.4);
+  /* Made both buttons have identical dimensions */
+  padding: 1.25rem 2.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  line-height: 1.4;
+  min-height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+/* Results Section */
+.results-section {
+  margin-top: 2rem;
+  /* Reduced padding for more compact results */
+  padding: 1.5rem;
+  /* Changed results background from green to blue tones */
+  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+  border-radius: 0.75rem;
+  /* Changed results border from green to blue */
+  border: 2px solid #bfdbfe;
+}
+
+.results-title {
+  font-family: "Work Sans", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  /* Changed results title color from green to blue */
+  color: #2563eb;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.results-subtitle {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.results-container {
+  background: white;
+  border-radius: 0.5rem;
+  /* Reduced padding for more compact results */
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  /* Changed results container border from green to blue */
+  border: 1px solid #dbeafe;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-content {
+  text-align: center;
+  width: 100%;
+}
+
+.result-text {
+  font-family: "Work Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  /* Changed result text color from green to blue */
+  color: #2563eb;
+  white-space: pre-wrap;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Footer */
+.footer {
+  background: #f8fafc;
+  /* Reduced footer padding for more compact design */
+  padding: 1.25rem 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer-content {
+  text-align: center;
+}
+
+/* Added footer-buttons container for side-by-side button layout */
+.footer-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.footer-text {
+  margin: 0;
+}
+
+.footer-link {
+  /* Changed footer link color from green to blue */
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  /* Changed footer link hover color from green to blue */
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+
+  .logo-section {
+    margin-left: 0;
+  }
+
+  .main-title {
+    font-size: 1.8rem;
+  }
+
+  .form-container {
+    padding: 1.5rem;
+  }
+
+  .form-section {
+    padding: 1.25rem;
+  }
+
+  /* Made mobile layout single column for better readability */
+  .date-inputs,
+  .location-inputs,
+  .socioeconomic-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    min-width: auto;
+  }
+
+  /* Made footer buttons stack vertically on mobile */
+  .footer-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .zona-fria-group {
+    grid-column: 1;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 3px solid #e2e8f0;
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 1.6rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .form-container {
+    padding: 1rem;
+  }
+
+  .form-section {
+    padding: 1rem;
+  }
+
+  .results-section {
+    padding: 1.25rem;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus Styles for Better Accessibility */
+.btn:focus-visible {
+  /* Changed focus outline from green to blue */
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.form-input:focus-visible,
+.form-select:focus-visible {
+  /* Changed focus outline from green to blue */
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .form-section {
+    border-width: 2px;
+  }
+
+  .btn-primary {
+    /* Changed high contrast button from green to blue */
+    background: #1d4ed8;
+  }
+
+  .btn-secondary {
+    background: #374151;
+  }
+}

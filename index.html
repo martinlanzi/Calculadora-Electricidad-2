@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Consumo de Electricidad</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <header class="header-section">
+                <div class="header-content">
+                    <div class="title-section">
+                        <h1 class="main-title">Calculadora de Electricidad</h1>
+                        <p class="subtitle">Calcule su consumo eléctrico de manera fácil y precisa</p>
+                    </div>
+                    <div class="logo-section">
+                        <img src="static/logo.jpg" alt="Logo CEFIP" class="logo">
+                    </div>
+                </div>
+            </header>
+            
+            <main class="form-container">
+                <form id="consumo-form" action="/calcular" method="POST" class="calculation-form">
+                    
+                    <section class="form-section">
+                        <h2 class="section-title">📅 Período de consumo</h2>
+                        <div class="date-inputs">
+                            <div class="input-group">
+                                <label for="fecha_1" class="input-label">Fecha inicial</label>
+                                <input type="text" id="fecha_1" name="fecha_1" placeholder="Selecciona una fecha" 
+                                       class="form-input flatpickr-input" value="{{ fecha_1 or '' }}" aria-describedby="fecha_1-help">
+                                <small id="fecha_1-help" class="input-help">Formato: DD-MM-AAAA</small>
+                            </div>
+                            <div class="input-group">
+                                <label for="fecha_2" class="input-label">Fecha final</label>
+                                <input type="text" id="fecha_2" name="fecha_2" placeholder="Selecciona una fecha" 
+                                       class="form-input flatpickr-input" value="{{ fecha_2 or '' }}" aria-describedby="fecha_2-help">
+                                <small id="fecha_2-help" class="input-help">Formato: DD-MM-AAAA</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <h2 class="section-title">📍 Ubicación</h2>
+                        <div class="location-inputs">
+                            <div class="input-group">
+                                <label for="provincia" class="input-label">Provincia</label>
+                                <select id="provincia" name="provincia" required class="form-select" aria-describedby="provincia-help">
+                                    <option value="" disabled {% if not provincia %}selected{% endif %}>Seleccione una provincia</option>
+                                </select>
+                                <small id="provincia-help" class="input-help">Seleccione su provincia de residencia</small>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="departamento" class="input-label">Departamento</label>
+                                <select id="departamento" name="departamento" required class="form-select" aria-describedby="departamento-help">
+                                    <option value="" disabled selected>Seleccione un departamento</option>
+                                </select>
+                                <small id="departamento-help" class="input-help">Seleccione su departamento</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <h2 class="section-title">💰 Información socioeconómica</h2>
+                        <div class="socioeconomic-inputs">
+                            <div class="input-group">
+                                <label for="nivel_ingresos" class="input-label">Nivel de ingresos</label>
+                                <select id="nivel_ingresos" name="nivel_ingresos" required class="form-select" aria-describedby="ingresos-help">
+                                    <option value="" disabled {% if not nivel_ingresos %}selected{% endif %}>Seleccione un ingreso</option>
+                                    <option value="3" {% if nivel_ingresos == '3' %}selected{% endif %}>Ingresos medios (N3)</option>
+                                    <option value="2" {% if nivel_ingresos == '2' %}selected{% endif %}>Ingresos bajos (N2)</option>
+                                    <option value="1" {% if nivel_ingresos == '1' %}selected{% endif %}>Ingresos altos (N1)</option>
+                                </select>
+                                <small id="ingresos-help" class="input-help">Seleccione según su nivel de ingresos familiar</small>
+                            </div>
+
+                            <div class="input-group zona-fria-group" id="zona-fria-div" style="display: none;">
+                                <label for="zona-fria" class="input-label">Subsidio zona fría</label>
+                                <select id="zona-fria" name="zona-fria" class="form-select">
+                                    <option value="0" selected>No aplica</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="tsocial" class="input-label">Tarifa Social</label>
+                                <select id="tsocial" name="tsocial" required class="form-select" aria-describedby="tsocial-help">
+                                    <option value="0" {% if tsocial == '0' %}selected{% endif %}>No</option>
+                                    <option value="1" {% if tsocial == '1' %}selected{% endif %}>Sí</option>
+                                </select>
+                                <small id="tsocial-help" class="input-help">¿Tiene acceso a tarifa social?</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <h2 class="section-title">⚡ Consumo eléctrico</h2>
+                        <div class="input-group">
+                            <label for="consumo" class="input-label">Consumo mensual (kWh)</label>
+                            <input type="number" id="consumo" name="consumo" step="0.0001" min="0" max="100000" 
+                                   required class="form-input" value="{{ consumo or '' }}" 
+                                   placeholder="Ingrese su consumo en kWh" aria-describedby="consumo-help">
+                            <small id="consumo-help" class="input-help">Ingrese el consumo promedio mensual en kilovatios hora</small>
+                        </div>
+                    </section>
+
+                    <div class="form-actions">
+                        <button type="submit" id="calcular-button" class="btn btn-primary">
+                            <span class="btn-icon">⚡</span>
+                            Calcular consumo
+                        </button>
+                        <button type="reset" id="recalcular" class="btn btn-secondary">
+                            <span class="btn-icon">🔄</span>
+                            Limpiar formulario
+                        </button>
+                    </div>
+                </form>
+
+                <section class="results-section" id="results-section">
+                    <h2 class="results-title">🧮 Monto a pagar mensual por el consumo del servicio</h2>
+                    <p class="results-subtitle">(antes de impuestos, tasas y recargos)</p>
+                    <div class="results-container" id="resultado-container">
+                        {% if output %}
+                            <div class="result-content">
+                                <pre class="result-text">{{ output }}</pre>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </main>
+
+            <footer class="footer">
+                <div class="footer-content">
+                    <div class="footer-buttons">
+                        <a href="https://cefip.econo.unlp.edu.ar/" target="_blank" class="btn btn-info">
+                            Conocé más sobre el CEFIP
+                        </a>
+                        <a href="https://cefip-mapa-elec.econo.unlp.edu.ar/" target="_blank" class="btn btn-map">
+                            🗺️ Costo de electricidad por ubicación
+                        </a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Configuración de datepickers
+            flatpickr("#fecha_1", {
+                dateFormat: "d-m-Y",
+                locale: "es",
+                allowInput: true
+            });
+            flatpickr("#fecha_2", {
+                dateFormat: "d-m-Y",
+                locale: "es",
+                allowInput: true
+            });
+
+            // Provincias y departamentos (value sin tilde, label con tilde)
+            const provincias = [
+                { value: "Buenos Aires", label: "Buenos Aires" },
+                { value: "Ciudad de Buenos Aires", label: "Ciudad de Buenos Aires" },
+                { value: "Córdoba", label: "Córdoba" },
+                { value: "Santa Fe", label: "Santa Fé" }
+            ];
+
+            const departamentosPorProvincia = {
+                "Buenos Aires": [
+                    { value: "adolfo alsina", label: "Adolfo Alsina" },
+                    { value: "adolfo gonzales chaves", label: "Adolfo Gonzales Chaves" },
+                    { value: "alberti", label: "Alberti" },
+                    { value: "almirante brown", label: "Almirante Brown" },
+                    { value: "arrecifes", label: "Arrecifes" },
+                    { value: "avellaneda", label: "Avellaneda" },
+                    { value: "ayacucho", label: "Ayacucho" },
+                    { value: "azul", label: "Azul" },
+                    { value: "bahía blanca", label: "Bahía Blanca" },
+                    { value: "balcarce", label: "Balcarce" },
+                    { value: "baradero", label: "Baradero" },
+                    { value: "benito juárez", label: "Benito Juárez" },
+                    { value: "berazategui", label: "Berazategui" },
+                    { value: "berisso", label: "Berisso" },
+                    { value: "bolívar", label: "Bolívar" },
+                    { value: "bragado", label: "Bragado" },
+                    { value: "brandsen", label: "Brandsen" },
+                    { value: "campana", label: "Campana" },
+                    { value: "cañuelas", label: "Cañuelas" },
+                    { value: "capitán sarmiento", label: "Capitán Sarmiento" },
+                    { value: "carlos casares", label: "Carlos Casares" },
+                    { value: "carlos tejedor", label: "Carlos Tejedor" },
+                    { value: "carmen de areco", label: "Carmen de Areco" },
+                    { value: "carmen de patagones", label: "Patagones" },
+                    { value: "castelli", label: "Castelli" },
+                    { value: "chacabuco", label: "Chacabuco" },
+                    { value: "chivilcoy", label: "Chivilcoy" },
+                    { value: "colón", label: "Colón" },
+                    { value: "coronel de marina leonardo rosal", label: "Coronel Rosales" },
+                    { value: "coronel dorrego", label: "Coronel Dorrego" },
+                    { value: "coronel pringles", label: "Coronel Pringles" },
+                    { value: "coronel suárez", label: "Coronel Suárez" },
+                    { value: "daireaux", label: "Daireaux" },
+                    { value: "dolores", label: "Dolores" },
+                    { value: "ensenada", label: "Ensenada" },
+                    { value: "escobar", label: "Escobar" },
+                    { value: "esteban echeverría", label: "Esteban Echeverría" },
+                    { value: "exaltación de la cruz", label: "Exaltación de la Cruz" },
+                    { value: "ezeiza", label: "Ezeiza" },
+                    { value: "florencio varela", label: "Florencio Varela" },
+                    { value: "ameghino", label: "Florentino Ameghino" },
+                    { value: "general alvarado", label: "General Alvarado" },
+                    { value: "general alvear", label: "General Alvear" },
+                    { value: "general arenales", label: "General Arenales" },
+                    { value: "general belgrano", label: "General Belgrano" },
+                    { value: "general guido", label: "General Guido" },
+                    { value: "general la madrid", label: "General La Madrid" },
+                    { value: "general las heras", label: "General Las Heras" },
+                    { value: "general lavalle", label: "General Lavalle" },
+                    { value: "general juan madariaga", label: "General Madariaga" },
+                    { value: "general paz", label: "General Paz" },
+                    { value: "general pinto", label: "General Pinto" },
+                    { value: "general pueyrredón", label: "General Pueyrredón" },
+                    { value: "general rodríguez", label: "General Rodríguez" },
+                    { value: "general san martín", label: "General San Martín" },
+                    { value: "general viamonte", label: "General Viamonte" },
+                    { value: "general villegas", label: "General Villegas" },
+                    { value: "guaminí", label: "Guaminí" },
+                    { value: "hipólito yrigoyen", label: "Hipólito Yrigoyen" },
+                    { value: "hurlingham", label: "Hurlingham" },
+                    { value: "ituzaingó", label: "Ituzaingó" },
+                    { value: "josé c. paz", label: "José C. Paz" },
+                    { value: "junín", label: "Junín" },
+                    { value: "la costa", label: "La Costa" },
+                    { value: "la matanza", label: "La Matanza" },
+                    { value: "la plata", label: "La Plata" },
+                    { value: "lanús", label: "Lanús" },
+                    { value: "laprida", label: "Laprida" },
+                    { value: "las flores", label: "Las Flores" },
+                    { value: "leandro n. alem", label: "Leandro N. Alem" },
+                    { value: "lezama", label: "Lezama" },
+                    { value: "lincoln", label: "Lincoln" },
+                    { value: "lobería", label: "Lobería" },
+                    { value: "lobos", label: "Lobos" },
+                    { value: "lomas de zamora", label: "Lomas de Zamora" },
+                    { value: "luján", label: "Luján" },
+                    { value: "magdalena", label: "Magdalena" },
+                    { value: "maipú", label: "Maipú" },
+                    { value: "malvinas argentinas", label: "Malvinas Argentinas" },
+                    { value: "mar chiquita", label: "Mar Chiquita" },
+                    { value: "marcos paz", label: "Marcos Paz" },
+                    { value: "mercedes", label: "Mercedes" },
+                    { value: "merlo", label: "Merlo" },
+                    { value: "monte", label: "Monte" },
+                    { value: "monte hermoso", label: "Monte Hermoso" },
+                    { value: "moreno", label: "Moreno" },
+                    { value: "morón", label: "Morón" },
+                    { value: "navarro", label: "Navarro" },
+                    { value: "necochea", label: "Necochea" },
+                    { value: "nueve de julio", label: "9 de Julio" },
+                    { value: "olavarría", label: "Olavarría" },
+                    { value: "pehuajó", label: "Pehuajó" },
+                    { value: "pellegrini", label: "Pellegrini" },
+                    { value: "pergamino", label: "Pergamino" },
+                    { value: "pila", label: "Pila" },
+                    { value: "pilar", label: "Pilar" },
+                    { value: "pinamar", label: "Pinamar" },
+                    { value: "presidente perón", label: "Presidente Perón" },
+                    { value: "puán", label: "Puán" },
+                    { value: "punta indio", label: "Punta Indio" },
+                    { value: "quilmes", label: "Quilmes" },
+                    { value: "ramallo", label: "Ramallo" },
+                    { value: "rauch", label: "Rauch" },
+                    { value: "rivadavia", label: "Rivadavia" },
+                    { value: "rojas", label: "Rojas" },
+                    { value: "roque pérez", label: "Roque Pérez" },
+                    { value: "saavedra", label: "Saavedra" },
+                    { value: "saladillo", label: "Saladillo" },
+                    { value: "salliqueló", label: "Salliqueló" },
+                    { value: "salto", label: "Salto" },
+                    { value: "san andrés de giles", label: "San Andrés de Giles" },
+                    { value: "san antonio de areco", label: "San Antonio de Areco" },
+                    { value: "san cayetano", label: "San Cayetano" },
+                    { value: "san fernando", label: "San Fernando" },
+                    { value: "san isidro", label: "San Isidro" },
+                    { value: "san miguel", label: "San Miguel" },
+                    { value: "san nicolás", label: "San Nicolás" },
+                    { value: "san pedro", label: "San Pedro" },
+                    { value: "san vicente", label: "San Vicente" },
+                    { value: "suipacha", label: "Suipacha" },
+                    { value: "tandil", label: "Tandil" },
+                    { value: "tapalqué", label: "Tapalqué" },
+                    { value: "tigre", label: "Tigre" },
+                    { value: "tordillo", label: "Tordillo" },
+                    { value: "tornquist", label: "Tornquist" },
+                    { value: "trenque lauquen", label: "Trenque Lauquen" },
+                    { value: "tres arroyos", label: "Tres Arroyos" },
+                    { value: "tres lomas", label: "Tres Lomas" },
+                    { value: "tres de febrero", label: "Tres de Febrero" },
+                    { value: "veinticinco de mayo", label: "25 de Mayo" },
+                    { value: "vicente lópez", label: "Vicente López" },
+                    { value: "villa gesell", label: "Villa Gesell" },
+                    { value: "villarino", label: "Villarino" },
+                    { value: "zárate", label: "Zárate" }
+                ],
+                "Ciudad de Buenos Aires": [
+                    { value: "comuna 1", label: "Comuna 1" },
+                    { value: "comuna 2", label: "Comuna 2" },
+                    { value: "comuna 3", label: "Comuna 3" },
+                    { value: "comuna 4", label: "Comuna 4" },
+                    { value: "comuna 5", label: "Comuna 5" },
+                    { value: "comuna 6", label: "Comuna 6" },
+                    { value: "comuna 7", label: "Comuna 7" },
+                    { value: "comuna 8", label: "Comuna 8" },
+                    { value: "comuna 9", label: "Comuna 9" },
+                    { value: "comuna 10", label: "Comuna 10" },
+                    { value: "comuna 11", label: "Comuna 11" },
+                    { value: "comuna 12", label: "Comuna 12" },
+                    { value: "comuna 13", label: "Comuna 13" },
+                    { value: "comuna 14", label: "Comuna 14" },
+                    { value: "comuna 15", label: "Comuna 15" }
+                ],
+                "Córdoba": [
+                    { value: "calamuchita", label: "Calamuchita" },
+                    { value: "capital", label: "Capital" },
+                    { value: "colon", label: "Colón" },
+                    { value: "cruz del eje", label: "Cruz del Eje" },
+                    { value: "general roca", label: "General Roca" },
+                    { value: "general san martín", label: "General San Martín" },
+                    { value: "islchilín", label: "Ischilín" },
+                    { value: "juárez celman", label: "Juárez Celman" },
+                    { value: "marcos juárez", label: "Marcos Juárez" },
+                    { value: "minas", label: "Minas" },
+                    { value: "pocho", label: "Pocho" },
+                    { value: "punilla", label: "Punilla" },
+                    { value: "río cuarto", label: "Río Cuarto" },
+                    { value: "río primero", label: "Río Primero" },
+                    { value: "río segundo", label: "Río Segundo" },
+                    { value: "río tercero", label: "Río Tercero" },
+                    { value: "san alberto", label: "San Alberto" },
+                    { value: "san justo", label: "San Justo" },
+                    { value: "santa maría", label: "Santa María" },
+                    { value: "sobremonte", label: "Sobremonte" },
+                    { value: "tercero arriba", label: "Tercero Arriba" },
+                    { value: "totoral", label: "Totoral" },
+                    { value: "tulumba", label: "Tulumba" },
+                    { value: "unión", label: "Unión" }
+                ],
+                "Santa Fe": [
+                    { value: "belgrano", label: "Belgrano" },
+                    { value: "caseros", label: "Caseros" },
+                    { value: "castellanos", label: "Castellanos" },
+                    { value: "constitución", label: "Constitución" },
+                    { value: "garay", label: "Garay" },
+                    { value: "general lopez", label: "General López" },
+                    { value: "general obligado", label: "General Obligado" },
+                    { value: "iriondo", label: "Iriondo" },
+                    { value: "la capital", label: "La Capital" },
+                    { value: "las colonias", label: "Las Colonias" },
+                    { value: "nueve de julio", label: "9 de Julio" },
+                    { value: "san cristóbal", label: "San Cristóbal" },
+                    { value: "san javier", label: "San Javier" },
+                    { value: "san jerónimo", label: "San Jerónimo" },
+                    { value: "san lorenzo", label: "San Lorenzo" },
+                    { value: "san martin", label: "San Martín" },
+                    { value: "vera", label: "Vera" }
+                ]
+            };
+
+            // Llenar provincias
+            const provinciaSelect = document.getElementById('provincia');
+            provincias.forEach(provincia => {
+                const option = document.createElement('option');
+                option.value = provincia.value;
+                option.textContent = provincia.label;
+                provinciaSelect.appendChild(option);
+            });
+
+            // Manejar cambio de provincia
+            provinciaSelect.addEventListener('change', function() {
+                const provincia = this.value;
+                const departamentoSelect = document.getElementById('departamento');
+                departamentoSelect.innerHTML = '<option value="" disabled selected>Seleccione un departamento</option>';
+                
+                if (departamentosPorProvincia[provincia]) {
+                    departamentosPorProvincia[provincia].forEach(depto => {
+                        const option = document.createElement('option');
+                        option.value = depto.value;
+                        option.textContent = depto.label;
+                        departamentoSelect.appendChild(option);
+                    });
+                }
+            });
+
+            // Botón borrar
+            document.getElementById('recalcular').addEventListener('click', function(e) {
+                e.preventDefault();
+                location.reload();
+            });
+
+            // Seleccionar provincia y departamento si vienen del servidor
+            var provinciaFromServer = "{{ provincia|default('') }}";
+            var departamentoFromServer = "{{ departamento|default('') }}";
+            if (provinciaFromServer) {
+                provinciaSelect.value = provinciaFromServer;
+                provinciaSelect.dispatchEvent(new Event('change'));
+            }
+            if (departamentoFromServer) {
+                setTimeout(function() {
+                    var departamentoSelect = document.getElementById('departamento');
+                    if (departamentoSelect) departamentoSelect.value = departamentoFromServer;
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
