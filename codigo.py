@@ -27,6 +27,7 @@ def index():
             output=form_data.get('output', ''),
             fecha_1=form_data.get('fecha_1', ''),
             fecha_2=form_data.get('fecha_2', ''),
+            fecha_emision=form_data.get('fecha_emision', ''),
             consumo=form_data.get('consumo', ''),
             provincia=form_data.get('provincia', ''),
             departamento=form_data.get('departamento', ''),
@@ -41,6 +42,7 @@ def calcular():
     try:
         fecha_1 = request.form['fecha_1']
         fecha_2 = request.form['fecha_2']
+        fecha_emision = request.form['fecha_emision']
         consumo = request.form['consumo']
         provincia = request.form['provincia']
         departamento = request.form['departamento']
@@ -51,7 +53,7 @@ def calcular():
         buffer = io.StringIO()
         with contextlib.redirect_stdout(buffer):
             resultado = calcular_tarifa(
-                fecha_1, fecha_2, consumo, provincia, departamento,
+                fecha_1, fecha_2, fecha_emision, consumo, provincia, departamento,
                 nivel_ingresos, tsocial, zonas
             )
 
@@ -62,6 +64,7 @@ def calcular():
             'output': output,
             'fecha_1': fecha_1,
             'fecha_2': fecha_2,
+            'fecha_emision': fecha_emision,
             'consumo': consumo,
             'provincia': provincia,
             'departamento': departamento,
@@ -75,6 +78,7 @@ def calcular():
             'output': f"Error:\n{str(e)}",
             'fecha_1': request.form.get('fecha_1', ''),
             'fecha_2': request.form.get('fecha_2', ''),
+            'fecha_emision': request.form.get('fecha_emision', ''),
             'consumo': request.form.get('consumo', ''),
             'provincia': request.form.get('provincia', ''),
             'departamento': request.form.get('departamento', ''),
@@ -83,7 +87,7 @@ def calcular():
         }
         return redirect(url_for('index'))
 
-def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_ingresos, tsocial, zonas):
+def calcular_tarifa(fecha_1, fecha_2, fecha_emision, consumo, provincia, departamento, nivel_ingresos, tsocial, zonas):
    
     # Convertir y limpiar parámetros
     consumo = float(consumo)
@@ -93,6 +97,7 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
     departamento = departamento.strip().lower()
     fecha_1 = datetime.strptime(fecha_1, '%d-%m-%Y')
     fecha_2 = datetime.strptime(fecha_2, '%d-%m-%Y')
+    fecha_emision = datetime.strptime(fecha_emision, '%d-%m-%Y')
 
     # Buscar la empresa distribuidora
     filtro_zonas = zonas.loc[
@@ -167,10 +172,8 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
 
     subperiodos = []
     for dia in rango_fechas:
-        # CAMBIO: Eliminado el filtro redundante por empresa
         fila = fechas[(fechas['desde'] <= dia) & (fechas['hasta'] >= dia)]
         
-        # CAMBIO: Simplificada la selección de CT - solo por fecha
         if not fila.empty:
             subperiodos.append({'fecha': dia, 'ct': fila.iloc[0][ct_col]})
         else:
@@ -209,7 +212,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         # Cálculo de costos fijos
         cft_total_1 = 0
         for ct in subperiodo_1['ct'].dropna().unique():
-            # CAMBIO: Agregado filtro por tarifa_social
             filtro = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -283,7 +285,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         # Cálculo de costos fijos
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            # CAMBIO: Eliminado filtro redundante por empresa
             filtro = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -310,7 +311,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         precios_pesados = []
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             filtro_ct = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -339,7 +339,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cuota = 1 if (fecha_1.day <= 15) else 2
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             f = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -356,7 +355,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         precios_pesados = []
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             f = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -378,7 +376,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         consumo_a_facturar = round(consumo)
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             f = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
@@ -395,7 +392,6 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cvt_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            # CAMBIO: Agregados filtros por nivel_ingreso y tarifa_social
             f = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
