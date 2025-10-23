@@ -27,6 +27,7 @@ def index():
             output=form_data.get('output', ''),
             fecha_1=form_data.get('fecha_1', ''),
             fecha_2=form_data.get('fecha_2', ''),
+            fecha_emision=form_data.get('fecha_emision', ''),
             consumo=form_data.get('consumo', ''),
             provincia=form_data.get('provincia', ''),
             departamento=form_data.get('departamento', ''),
@@ -41,6 +42,7 @@ def calcular():
     try:
         fecha_1 = request.form['fecha_1']
         fecha_2 = request.form['fecha_2']
+        fecha_emision = request.form['fecha_emision']
         consumo = request.form['consumo']
         provincia = request.form['provincia']
         departamento = request.form['departamento']
@@ -51,7 +53,7 @@ def calcular():
         buffer = io.StringIO()
         with contextlib.redirect_stdout(buffer):
             resultado = calcular_tarifa(
-                fecha_1, fecha_2, consumo, provincia, departamento,
+                fecha_1, fecha_2, fecha_emision, consumo, provincia, departamento,
                 nivel_ingresos, tsocial, zonas
             )
 
@@ -62,6 +64,7 @@ def calcular():
             'output': output,
             'fecha_1': fecha_1,
             'fecha_2': fecha_2,
+            'fecha_emision': fecha_emision,
             'consumo': consumo,
             'provincia': provincia,
             'departamento': departamento,
@@ -75,6 +78,7 @@ def calcular():
             'output': f"Error:\n{str(e)}",
             'fecha_1': request.form.get('fecha_1', ''),
             'fecha_2': request.form.get('fecha_2', ''),
+            'fecha_emision': request.form.get('fecha_emision', ''),
             'consumo': request.form.get('consumo', ''),
             'provincia': request.form.get('provincia', ''),
             'departamento': request.form.get('departamento', ''),
@@ -83,7 +87,7 @@ def calcular():
         }
         return redirect(url_for('index'))
 
-def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_ingresos, tsocial, zonas):
+def calcular_tarifa(fecha_1, fecha_2, fecha_emision, consumo, provincia, departamento, nivel_ingresos, tsocial, zonas):
    
     # Convertir y limpiar parámetros
     consumo = float(consumo)
@@ -93,6 +97,7 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
     departamento = departamento.strip().lower()
     fecha_1 = datetime.strptime(fecha_1, '%d-%m-%Y')
     fecha_2 = datetime.strptime(fecha_2, '%d-%m-%Y')
+    fecha_emision = datetime.strptime(fecha_emision, '%d-%m-%Y')
 
     # Buscar la empresa distribuidora
     filtro_zonas = zonas.loc[
@@ -167,33 +172,10 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
 
     subperiodos = []
     for dia in rango_fechas:
-        
-        fechas_empresa = fechas[fechas['empresa'] == empresa]
-        
-        fila = fechas_empresa[(fechas_empresa['desde'] <= dia) & (fechas_empresa['hasta'] >= dia)]
+        fila = fechas[(fechas['desde'] <= dia) & (fechas['hasta'] >= dia)]
         
         if not fila.empty:
-            # 1. Buscar n{nivel_ingresos}
-            fila_nivel = fila[fila[ct_col].str.contains(f"n{nivel_ingresos}", case=False, na=False)]
-            # Si tsocial es 0, filtrar para que no contenga 'ts'
-            if tsocial == 0:
-                fila_nivel = fila_nivel[~fila_nivel[ct_col].str.contains('ts', case=False, na=False)]
-            # Si tsocial es 1, buscar preferentemente los que incluyen 'ts'
-            elif tsocial == 1:
-                fila_nivel_ts = fila_nivel[fila_nivel[ct_col].str.contains('ts', case=False, na=False)]
-                if not fila_nivel_ts.empty:
-                    fila_nivel = fila_nivel_ts
-            # 2. Si no hay n{nivel_ingresos}, buscar tsg{nivel_ingresos}
-            if fila_nivel.empty:
-                fila_nivel = fila[fila[ct_col].str.contains(f"tsg{nivel_ingresos}", case=False, na=False)]
-            # 3. Si tampoco hay, buscar cualquiera que tenga 'ts'
-            if fila_nivel.empty:
-                fila_nivel = fila[fila[ct_col].str.contains('ts', case=False, na=False)]
-            if not fila_nivel.empty:
-                subperiodos.append({'fecha': dia, 'ct': fila_nivel.iloc[0][ct_col]})
-            else:
-                # Si ninguno cumple la condición, elegimos el primero de los resultados originales
-                subperiodos.append({'fecha': dia, 'ct': fila.iloc[0][ct_col]})
+            subperiodos.append({'fecha': dia, 'ct': fila.iloc[0][ct_col]})
         else:
             subperiodos.append({'fecha': dia, 'ct': None})
 
@@ -234,7 +216,8 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
                 (ctarifarios['archivo'] == ct) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
                 (ctarifarios['umbral_minimo'] <= cat_consumo) &
-                (ctarifarios['umbral_maximo'] >= cat_consumo)
+                (ctarifarios['umbral_maximo'] >= cat_consumo) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ]
             if not filtro.empty:
                 dias_ct = subperiodo_1[subperiodo_1['ct'] == ct].shape[0]
@@ -304,10 +287,10 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         for ct in subperiodos_df['ct'].dropna().unique():
             filtro = ctarifarios[
                 (ctarifarios['archivo'] == ct) &
-                (ctarifarios['empresa'] == empresa) &
                 (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
                 (ctarifarios['umbral_minimo'] <= cat_consumo) &
-                (ctarifarios['umbral_maximo'] >= cat_consumo)
+                (ctarifarios['umbral_maximo'] >= cat_consumo) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ]
             if not filtro.empty:
                 dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
@@ -329,7 +312,9 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
             filtro_ct = ctarifarios[
-                (ctarifarios['archivo'] == ct) 
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
             ].sort_values('umbral_minimo')
             if not filtro_ct.empty:
                 for _, fila in filtro_ct.iterrows():
@@ -354,7 +339,13 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cuota = 1 if (fecha_1.day <= 15) else 2
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            f = ctarifarios[(ctarifarios['archivo'] == ct)]
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['umbral_minimo'] <= consumo_a_facturar) &
+                (ctarifarios['umbral_maximo'] >= consumo_a_facturar) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ]
             if f.empty: continue
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
             tramo = f['costo_fijo'].iloc[0] * (dias_ct / dias_entre_lecturas)
@@ -364,7 +355,11 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         precios_pesados = []
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            f = ctarifarios[(ctarifarios['archivo'] == ct)].sort_values('umbral_minimo')
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ].sort_values('umbral_minimo')
             if f.empty: continue
             for _, fila in f.iterrows():
                 if consumo_a_facturar <= fila['umbral_maximo'] or pd.isna(fila['umbral_maximo']):
@@ -381,7 +376,13 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         consumo_a_facturar = round(consumo)
         cft_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
-            f = ctarifarios[(ctarifarios['archivo'] == ct)]
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['umbral_minimo'] <= consumo_a_facturar) &
+                (ctarifarios['umbral_maximo'] >= consumo_a_facturar) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ]
             if f.empty: continue
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
             tramo = round(f['costo_fijo'].iloc[0] * (dias_ct / dias_entre_lecturas), 2)
@@ -391,7 +392,11 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         cvt_total = 0
         for ct in subperiodos_df['ct'].dropna().unique():
             dias_ct = subperiodos_df[subperiodos_df['ct'] == ct].shape[0]
-            f = ctarifarios[(ctarifarios['archivo'] == ct)].sort_values('umbral_minimo')
+            f = ctarifarios[
+                (ctarifarios['archivo'] == ct) &
+                (ctarifarios['nivel_ingreso'] == nivel_ingresos) &
+                (ctarifarios['tarifa_social'] == tsocial)
+            ].sort_values('umbral_minimo')
             if f.empty: continue
             consumo_ct = consumo_a_facturar * (dias_ct / dias_entre_lecturas)
             acumulado = 0
@@ -427,4 +432,3 @@ def calcular_tarifa(fecha_1, fecha_2, consumo, provincia, departamento, nivel_in
         
 if __name__ == '__main__':
     app.run(debug=True)
-

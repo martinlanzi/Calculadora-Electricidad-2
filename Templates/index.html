@@ -42,6 +42,12 @@
                                        class="form-input flatpickr-input" value="{{ fecha_2 or '' }}" aria-describedby="fecha_2-help">
                                 <small id="fecha_2-help" class="input-help">Formato: DD-MM-AAAA</small>
                             </div>
+                            <div class="input-group">
+                                <label for="fecha_emision" class="input-label">Fecha de emisión</label>
+                                <input type="text" id="fecha_emision" name="fecha_emision" placeholder="Selecciona una fecha" 
+                                       class="form-input flatpickr-input" value="{{ fecha_emision or '' }}" aria-describedby="fecha_emision-help">
+                                <small id="fecha_emision-help" class="input-help">Formato: DD-MM-AAAA</small>
+                            </div>
                         </div>
                     </section>
 
@@ -160,6 +166,11 @@
                 allowInput: true
             });
             flatpickr("#fecha_2", {
+                dateFormat: "d-m-Y",
+                locale: "es",
+                allowInput: true
+            });
+            flatpickr("#fecha_emision", {
                 dateFormat: "d-m-Y",
                 locale: "es",
                 allowInput: true
